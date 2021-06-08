@@ -58,13 +58,13 @@ void loop() {
   Serial.println(" cm");
   
   if(toggle){
-    digitalWrite(relayPin, LOW);
+    digitalWrite(relayPin, HIGH);
   }
   else{
-    digitalWrite(relayPin, HIGH);
+    digitalWrite(relayPin, LOW);
     
     while(distance < 750){
-      digitalWrite(relayPin, LOW);
+      digitalWrite(relayPin, HIGH);
       drinkingStart= millis();
       while(distance < 750){
         delay(4500); //turn relay on for 4.5 seconds

@@ -1,0 +1,136 @@
+/* 
+  The following variables are automatically generated and updated when changes are made to the Thing
+
+  CloudTime drinkingTime;
+  CloudSwitch toggle;
+  CloudLength distance;
+
+  Variables which are marked as READ/WRITE in the Cloud Thing will also have functions
+  which are called when their values are changed from the Dashboard.
+  These functions are generated with the Thing and added at the end of this sketch.
+*/
+
+#include "thingProperties.h"
+
+const int echoPin = 3;  // pin connected to Echo Pin in the ultrasonic distance sensor
+const int trigPin  = 4; // pin connected to trig Pin in the ultrasonic distance sensor
+const int relayPin = 2; //pin to control the relay
+
+int drinkingStart = 0;
+int drinkingStop = 0;
+
+void setup() {
+  
+  pinMode(relayPin, OUTPUT); //initialize the relayPin as an output
+  pinMode(echoPin, INPUT); //Set the connection pin output mode Echo pin
+  pinMode(trigPin, OUTPUT);//Set the connection pin output mode trog pin
+  
+  // Initialize serial and wait for port to open:
+  Serial.begin(9600);
+  // This delay gives the chance to wait for a Serial Monitor without blocking if none is found
+  delay(1500); 
+
+  // Defined in thingProperties.h
+  initProperties();
+
+  // Connect to Arduino IoT Cloud
+  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+  
+  /*
+     The following function allows you to obtain more information
+     related to the state of network and IoT Cloud connection and errors
+     the higher number the more granular information you’ll get.
+     The default is 0 (only errors).
+     Maximum is 4
+ */
+  setDebugMessageLevel(2);
+  ArduinoCloud.printDebugInfo();
+}
+
+void loop() {
+  ArduinoCloud.update();
+  // Your code here 
+  
+  distance= ping(echoPin);
+  delay(500);
+  Serial.print("Distance= ");
+  Serial.print(distance);
+  Serial.println(" cm");
+  
+  if(toggle){
+    digitalWrite(relayPin, LOW);
+  }
+  else{
+    digitalWrite(relayPin, HIGH);
+    
+    while(distance < 750){
+      digitalWrite(relayPin, LOW);
+      drinkingStart= millis();
+      while(distance < 750){
+        delay(4500); //turn relay on for 4.5 seconds
+        distance= ping(echoPin);
+        delay(500); //delay for 0.5 seconds
+        Serial.print("Distance= ");
+        Serial.print(distance);
+        Serial.println(" cm");
+        drinkingStop= millis();
+      }
+    }
+    
+    if((drinkingStop-drinkingStart) != 0){
+      drinkingTime= (drinkingStop-drinkingStart)/1000;
+      delay(1000); //delay for the derinkingTime value to update in the cloud
+      Serial.print("Drinking Time= ");
+      Serial.print(drinkingTime);
+      Serial.println(" s");
+      drinkingStop= drinkingStart= drinkingTime= 0; //reset all time counters to zero
+    }
+    
+
+    
+  }
+  
+}
+
+int ping(int echoPin) 
+{ 
+   // establish variables for duration of the ping, 
+   // and the distance result in inches and centimeters: 
+   long duration, cm; 
+   // The PING))) is triggered by a HIGH pulse of 2 or more microseconds. 
+   // Give a short LOW pulse beforehand to ensure a clean HIGH pulse: 
+   pinMode(trigPin, OUTPUT); 
+   digitalWrite(trigPin, LOW); 
+   delayMicroseconds(2); 
+   digitalWrite(trigPin, HIGH); 
+   delayMicroseconds(5); 
+   digitalWrite(trigPin, LOW); 
+
+   pinMode(echoPin, INPUT); 
+   duration = pulseIn(echoPin, HIGH); 
+
+   // convert the time into a distance 
+   cm = microsecondsToCentimeters(duration); 
+   return cm ; 
+} 
+
+long microsecondsToCentimeters(long microseconds) 
+{ 
+   // The speed of sound is 340 m/s or 29 microseconds per centimeter. 
+   // The ping travels out and back, so to find the distance of the 
+   // object we take half of the distance travelled. 
+   return microseconds / 29 / 2; 
+}
+
+void onDrinkingTimeChange() {
+  // Do something
+}
+
+void onToggleChange() {
+ //Do something
+}
+
+void onDistanceChange() {
+  // Do something
+}
+
